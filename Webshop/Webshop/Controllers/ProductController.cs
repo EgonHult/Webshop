@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -15,13 +17,17 @@ namespace Webshop.Controllers
     public class ProductController : Controller
     {
         private readonly WebshopContext context;
+        private IWebHostEnvironment environment;
 
         //public CreateProductModel createProductModel { get; set; }
         public DatabaseCRUD databaseCRUD;
-        public ProductController(WebshopContext context)
+        public ProductController(WebshopContext context, IWebHostEnvironment env)
         {
+            this.environment = env;
             this.context = context;
         }
+
+
         //This mtd display the Products based on Passed in CategoryId
         public IActionResult Index(int catid)
         {
@@ -86,6 +92,39 @@ namespace Webshop.Controllers
             return View(query);
         }
 
-      
+
+        public IActionResult TestUploadFile()
+        {
+            return View();
+        }
+
+
+        [HttpPost]
+        public async Task<IActionResult> UploadTest(IFormFile file)
+        {
+            // Get path to wwwroot folder
+            var wwwRoot = environment.WebRootPath;
+
+            // Name of folder to store product images
+            var productFolder = "products";
+
+            // Create folder for storing product images if it does not exist
+            if (!Directory.Exists(wwwRoot + "\\" + productFolder))
+                Directory.CreateDirectory(wwwRoot + "\\" + productFolder);
+
+            // Get name of file. Validate file before using it!
+            var fileName = System.IO.Path.GetFileName(file.FileName);
+            
+            // Set the path to point to 
+            var filePath = Path.Combine(wwwRoot, productFolder, fileName);
+
+
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(fileStream);
+            }
+
+            return View(nameof(TestUploadFile));
+        }
     }
 }
